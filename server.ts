@@ -162,18 +162,9 @@ async function startServer() {
     res.json({ message: 'pong', timestamp: new Date().toISOString() });
   });
 
-  // Rate limiters
-  const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 login requests per windowMs
-    message: { error: 'تعداد درخواست‌های ورود بیش از حد مجاز است. لطفا ۱۵ دقیقه دیگر تلاش کنید.' }
-  });
-
-  const passwordChangeLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // limit each IP to 3 password change requests per windowMs
-    message: { error: 'تعداد درخواست‌های تغییر رمز عبور بیش از حد مجاز است. لطفا بعدا تلاش کنید.' }
-  });
+  // Rate limiters disabled
+  const loginLimiter = (req: any, res: any, next: any) => next();
+  const passwordChangeLimiter = (req: any, res: any, next: any) => next();
 
   // API Routes
   
@@ -544,7 +535,7 @@ async function startServer() {
       token, expiresAt ? expiresAt.toISOString() : null, max_uses || 0, req.user.id
     );
     
-    res.json({ token, url: `${process.env.APP_URL || 'http://localhost:3000'}/invite/${token}` });
+    res.json({ token, url: `${process.env.APP_URL || 'https://chatapp.mobilemz.com'}/invite/${token}` });
   });
 
   // Admin: Get Invite Links

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, Link as LinkIcon, MessageSquare, Settings, Search, CheckCircle, XCircle, Clock, Send, Ban, LogOut, Paperclip, FileText, Copy, Loader2, Trash2, EyeOff, Timer, Mic, Square, AlertTriangle, Moon } from 'lucide-react';
+import { Users, Link as LinkIcon, MessageSquare, Settings, Search, CheckCircle, XCircle, Clock, Send, Ban, LogOut, Paperclip, FileText, Copy, Loader2, Trash2, EyeOff, Timer, Mic, Square, AlertTriangle, Moon, QrCode, Menu } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import { io, Socket } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns-jalali';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface Conversation {
   id: number;
@@ -64,6 +65,50 @@ export default function AdminDashboard() {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const audioChunksRef = React.useRef<Blob[]>([]);
+
+  // Mobile sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // QR Code state
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrContent, setQrContent] = useState('');
+  const qrCanvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  const handleSendQR = async () => {
+    if (!qrCanvasRef.current || !qrContent.trim() || !socket || !selectedConv) return;
+    
+    const canvas = qrCanvasRef.current;
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'qrcode.png', { type: 'image/png' });
+      
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.url) {
+          socket.emit('send_message', {
+            conversation_id: selectedConv.id,
+            content: 'کد QR',
+            file_url: data.url,
+            is_spoiler: isSpoiler,
+            expires_in_minutes: expiresInMinutes
+          });
+          setShowQRModal(false);
+          setQrContent('');
+        }
+      } catch (error) {
+        console.error('QR upload failed:', error);
+      }
+      setIsUploading(false);
+    });
+  };
 
   const startRecording = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -691,9 +736,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors duration-300">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 z-50">
+        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">پنل مدیریت</h1>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-600 dark:text-gray-300">
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+
       {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col transition-colors duration-300">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div className={`fixed md:static inset-y-0 right-0 z-40 w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'} md:flex`}>
+        <div className="hidden md:flex p-4 border-b border-gray-200 dark:border-gray-700 items-center justify-between">
           <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">پنل مدیریت</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -702,7 +758,14 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+        <div className="md:hidden p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between mt-16">
+          <span className="font-medium text-gray-700 dark:text-gray-300">منو</span>
+          <button onClick={logout} className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 flex items-center gap-2">
+            <LogOut className="w-5 h-5" />
+            <span>خروج</span>
+          </button>
+        </div>
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           <button
             onClick={() => !user?.must_change_password && setActiveTab('chats')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'chats' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'} ${user?.must_change_password ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -738,11 +801,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col pt-16 md:pt-0 w-full md:w-auto">
         {activeTab === 'chats' && (
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden relative">
             {/* Chat List */}
-            <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col transition-colors duration-300">
+            <div className={`w-full md:w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col transition-colors duration-300 absolute md:relative inset-0 z-20 ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="relative">
                   <Search className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -790,12 +853,19 @@ export default function AdminDashboard() {
             </div>
 
             {/* Chat Area */}
-            {selectedConv ? (
-              <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-                {/* Chat Header */}
-                <div className="bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm z-10 transition-colors duration-300">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
+            <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-300 absolute md:relative inset-0 z-30 ${!selectedConv ? 'hidden md:flex' : 'flex'}`}>
+              {selectedConv ? (
+                <>
+                  {/* Chat Header */}
+                  <div className="bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm z-10 transition-colors duration-300">
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={() => setSelectedConv(null)}
+                        className="md:hidden p-2 text-gray-600 dark:text-gray-300"
+                      >
+                        <XCircle className="w-6 h-6" />
+                      </button>
+                      <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
                       {selectedConv.first_name?.[0] || 'U'}
                     </div>
                     <div>
@@ -960,6 +1030,14 @@ export default function AdminDashboard() {
                     >
                       <Paperclip className="w-5 h-5" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowQRModal(true)}
+                      className="p-3 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors flex-shrink-0"
+                      title="ساخت کد QR"
+                    >
+                      <QrCode className="w-5 h-5" />
+                    </button>
                     <input
                       type="text"
                       value={newMessage}
@@ -988,13 +1066,14 @@ export default function AdminDashboard() {
                     )}
                   </form>
                 </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-400 flex-col gap-4 transition-colors duration-300">
-                <MessageSquare className="w-16 h-16 opacity-20" />
-                <p>یک گفتگو را برای شروع انتخاب کنید</p>
-              </div>
-            )}
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-400 flex-col gap-4 transition-colors duration-300">
+                  <MessageSquare className="w-16 h-16 opacity-20" />
+                  <p>یک گفتگو را برای شروع انتخاب کنید</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1240,7 +1319,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {user?.must_change_password && (
+            {!!user?.must_change_password && (
               <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl text-yellow-800 dark:text-yellow-400 text-sm">
                 لطفا قبل از ادامه، رمز عبور جدیدی برای خود تنظیم کنید.
               </div>
@@ -1404,6 +1483,54 @@ export default function AdminDashboard() {
                 className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 انصراف
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden transition-colors duration-300">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">ساخت کد QR</h2>
+              <button onClick={() => setShowQRModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">متن یا لینک</label>
+                <input
+                  type="text"
+                  value={qrContent}
+                  onChange={(e) => setQrContent(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div className="flex justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                {qrContent ? (
+                  <QRCodeCanvas
+                    value={qrContent}
+                    size={200}
+                    level="M"
+                    includeMargin={true}
+                    ref={qrCanvasRef}
+                  />
+                ) : (
+                  <div className="w-[200px] h-[200px] flex items-center justify-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
+                    <QrCode className="w-12 h-12 opacity-50" />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSendQR}
+                disabled={!qrContent.trim() || isUploading}
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+              >
+                {isUploading ? <span className="animate-spin">⏳</span> : <Send className="w-5 h-5" />}
+                ارسال به عنوان پیام
               </button>
             </div>
           </div>

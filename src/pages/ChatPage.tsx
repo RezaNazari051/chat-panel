@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
-import { Send, Clock, LogOut, Check, CheckCheck, Paperclip, FileText, XCircle, Settings, CheckCircle, LayoutDashboard, EyeOff, Timer, Mic, Square, Moon } from 'lucide-react';
+import { Send, Clock, LogOut, Check, CheckCheck, Paperclip, FileText, XCircle, Settings, CheckCircle, LayoutDashboard, EyeOff, Timer, Mic, Square, Moon, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns-jalali';
 import ThemeToggle from '../components/ThemeToggle';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface Message {
   id: number;
@@ -37,6 +38,47 @@ export default function ChatPage() {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  // QR Code state
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrContent, setQrContent] = useState('');
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const handleSendQR = async () => {
+    if (!qrCanvasRef.current || !qrContent.trim() || !socket || !conversationId) return;
+    
+    const canvas = qrCanvasRef.current;
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'qrcode.png', { type: 'image/png' });
+      
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.url) {
+          socket.emit('send_message', {
+            conversation_id: conversationId,
+            content: 'کد QR',
+            file_url: data.url,
+            is_spoiler: isSpoiler,
+            expires_in_minutes: expiresInMinutes
+          });
+          setShowQRModal(false);
+          setQrContent('');
+        }
+      } catch (error) {
+        console.error('QR upload failed:', error);
+      }
+      setIsUploading(false);
+    });
+  };
 
   const startRecording = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -595,6 +637,14 @@ export default function ChatPage() {
             >
               <Paperclip className="w-5 h-5" />
             </button>
+            <button
+              type="button"
+              onClick={() => setShowQRModal(true)}
+              className="p-3 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors flex-shrink-0"
+              title="ساخت کد QR"
+            >
+              <QrCode className="w-5 h-5" />
+            </button>
             <input
               type="text"
               value={newMessage}
@@ -719,6 +769,54 @@ export default function ChatPage() {
                 )}
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden transition-colors duration-300">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">ساخت کد QR</h2>
+              <button onClick={() => setShowQRModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">متن یا لینک</label>
+                <input
+                  type="text"
+                  value={qrContent}
+                  onChange={(e) => setQrContent(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div className="flex justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                {qrContent ? (
+                  <QRCodeCanvas
+                    value={qrContent}
+                    size={200}
+                    level="M"
+                    includeMargin={true}
+                    ref={qrCanvasRef}
+                  />
+                ) : (
+                  <div className="w-[200px] h-[200px] flex items-center justify-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
+                    <QrCode className="w-12 h-12 opacity-50" />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSendQR}
+                disabled={!qrContent.trim() || isUploading}
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+              >
+                {isUploading ? <span className="animate-spin">⏳</span> : <Send className="w-5 h-5" />}
+                ارسال به عنوان پیام
+              </button>
+            </div>
           </div>
         </div>
       )}
