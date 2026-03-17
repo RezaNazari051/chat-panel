@@ -503,8 +503,33 @@ export default function AdminDashboard() {
   const [adminCurrentPassword, setAdminCurrentPassword] = useState('');
   const [adminNewPassword, setAdminNewPassword] = useState('');
   const [adminConfirmPassword, setAdminConfirmPassword] = useState('');
+  const [adminNewUsername, setAdminNewUsername] = useState('');
   const [adminPasswordError, setAdminPasswordError] = useState('');
   const [adminPasswordSuccess, setAdminPasswordSuccess] = useState('');
+
+  const handleAdminChangeUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/admin/users/${user?.id}/username`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ username: adminNewUsername })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('نام کاربری با موفقیت تغییر کرد');
+        setAdminNewUsername('');
+      } else {
+        alert(data.error || 'خطا در تغییر نام کاربری');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('خطا در تغییر نام کاربری');
+    }
+  };
 
   const handleAdminChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1274,6 +1299,28 @@ export default function AdminDashboard() {
                 تغییر رمز عبور
               </button>
             </form>
+
+            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">تغییر نام کاربری</h3>
+              <form onSubmit={handleAdminChangeUsername} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نام کاربری جدید</label>
+                  <input
+                    type="text"
+                    required
+                    value={adminNewUsername}
+                    onChange={(e) => setAdminNewUsername(e.target.value)}
+                    className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                >
+                  تغییر نام کاربری
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

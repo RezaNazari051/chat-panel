@@ -376,6 +376,21 @@ async function startServer() {
     res.json(conversations);
   });
 
+  // Admin: Update Username
+  app.patch('/api/admin/users/:id/username', authenticateToken, isAdmin, (req, res) => {
+    const { username } = req.body;
+    try {
+      db.prepare('UPDATE users SET username = ? WHERE id = ?').run(username, req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      if (e.message.includes('UNIQUE constraint failed')) {
+        res.status(400).json({ error: 'نام کاربری از قبل وجود دارد' });
+      } else {
+        res.status(500).json({ error: 'خطای سرور' });
+      }
+    }
+  });
+
   // Admin: Approve user
   app.post('/api/admin/users/:id/approve', authenticateToken, isAdmin, (req, res) => {
     const { minutes, clear_history, load_history } = req.body; // Expiration minutes
