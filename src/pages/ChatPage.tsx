@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
-import { Send, Clock, LogOut, Check, CheckCheck, Paperclip, FileText, XCircle, Settings, CheckCircle, LayoutDashboard, EyeOff, Timer, Mic, Square } from 'lucide-react';
+import { Send, Clock, LogOut, Check, CheckCheck, Paperclip, FileText, XCircle, Settings, CheckCircle, LayoutDashboard, EyeOff, Timer, Mic, Square, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns-jalali';
+import ThemeToggle from '../components/ThemeToggle';
 
 interface Message {
   id: number;
@@ -424,24 +425,25 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 select-none">
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 select-none transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10">
+      <header className="bg-white dark:bg-gray-800 shadow-sm px-6 py-4 flex justify-between items-center z-10 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
             م
           </div>
           <div>
-            <h1 className="font-semibold text-gray-900">پشتیبانی</h1>
-            <p className="text-xs text-gray-500">پاسخگویی آنلاین</p>
+            <h1 className="font-semibold text-gray-900 dark:text-gray-100">پشتیبانی</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">پاسخگویی آنلاین</p>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/admin')}
-              className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-indigo-100 transition-colors"
+              className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
               title="پنل مدیریت"
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -451,19 +453,19 @@ export default function ChatPage() {
           {user?.role === 'registered' && (
             <button
               onClick={() => setShowSettings(true)}
-              className="text-gray-500 hover:text-indigo-600 transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               title="تنظیمات"
             >
               <Settings className="w-5 h-5" />
             </button>
           )}
           {timeLeft && (
-            <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-2 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-3 py-1.5 rounded-full text-sm font-medium">
               <Clock className="w-4 h-4" />
               <span dir="ltr">{timeLeft}</span>
             </div>
           )}
-          <button onClick={handleLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors rounded-full hover:bg-red-50">
+          <button onClick={handleLogout} className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/30">
             <LogOut className="w-5 h-5" />
           </button>
         </div>
@@ -472,7 +474,7 @@ export default function ChatPage() {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="text-center my-4">
-          <span className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">
+          <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs px-3 py-1 rounded-full">
             شروع گفتگو
           </span>
         </div>
@@ -484,7 +486,7 @@ export default function ChatPage() {
 
           return (
             <div key={msg.id} className={`flex ${isMine ? 'justify-start' : 'justify-end'}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${isMine ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-white text-gray-800 shadow-sm rounded-tl-sm'}`}>
+              <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${isMine ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 shadow-sm rounded-tl-sm border border-gray-100 dark:border-gray-700'}`}>
                 {msg.expires_at && (
                   <div className="flex items-center gap-1 mb-1 text-[10px] opacity-70">
                     <Timer className="w-3 h-3" />
@@ -498,7 +500,7 @@ export default function ChatPage() {
                     ) : msg.file_url.match(/\.(webm|mp3|wav|ogg|m4a)$/i) ? (
                       <audio src={msg.file_url} controls className="max-w-full" />
                     ) : (
-                      <a href={msg.file_url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isMine ? 'bg-indigo-700 hover:bg-indigo-800' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}>
+                      <a href={msg.file_url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isMine ? 'bg-indigo-700 hover:bg-indigo-800' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'} transition-colors`}>
                         <FileText className="w-5 h-5" />
                         <span className="text-sm truncate">فایل پیوست</span>
                       </a>
@@ -511,7 +513,7 @@ export default function ChatPage() {
                     onClick={() => isSpoiler && setRevealedSpoilers(prev => ({ ...prev, [msg.id]: true }))}
                   >
                     {isSpoiler && !isRevealed ? (
-                      <div className="flex items-center gap-2 bg-black/10 px-3 py-2 rounded-lg backdrop-blur-sm">
+                      <div className="flex items-center gap-2 bg-black/10 dark:bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm">
                         <EyeOff className="w-4 h-4" />
                         <span className="text-xs">برای مشاهده کلیک کنید (اسپویلر)</span>
                       </div>
@@ -520,7 +522,7 @@ export default function ChatPage() {
                     )}
                   </div>
                 )}
-                <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${isMine ? 'text-indigo-200' : 'text-gray-400'}`}>
+                <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${isMine ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}`}>
                   <span>{format(new Date(msg.created_at), 'HH:mm')}</span>
                   {isMine && (
                     msg.is_read ? <CheckCheck className="w-3 h-3" /> : <Check className="w-3 h-3" />
@@ -533,10 +535,10 @@ export default function ChatPage() {
         
         {adminTyping && (
           <div className="flex justify-end">
-            <div className="bg-white text-gray-800 shadow-sm rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 shadow-sm rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1 border border-gray-100 dark:border-gray-700">
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
           </div>
         )}
@@ -544,11 +546,11 @@ export default function ChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
+      <div className="bg-white dark:bg-gray-800 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] z-10 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
         <div className="max-w-4xl mx-auto">
           {selectedFile && (
-            <div className="mb-2 p-2 bg-gray-50 rounded-lg flex items-center justify-between">
-              <span className="text-sm text-gray-600 truncate">{selectedFile.name}</span>
+            <div className="mb-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-300 truncate">{selectedFile.name}</span>
               <button onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700">
                 <XCircle className="w-4 h-4" />
               </button>
@@ -558,7 +560,7 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => setIsSpoiler(!isSpoiler)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isSpoiler ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isSpoiler ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <EyeOff className="w-4 h-4" />
               اسپویلر
@@ -568,7 +570,7 @@ export default function ChatPage() {
               <select
                 value={expiresInMinutes}
                 onChange={(e) => setExpiresInMinutes(e.target.value)}
-                className="text-xs bg-gray-100 border-transparent rounded-lg px-2 py-1.5 focus:ring-0 focus:border-indigo-500"
+                className="text-xs bg-gray-100 dark:bg-gray-700 border-transparent rounded-lg px-2 py-1.5 focus:ring-0 focus:border-indigo-500 text-gray-900 dark:text-gray-100"
               >
                 <option value="">بدون زمان‌سنج</option>
                 <option value="1">۱ دقیقه</option>
@@ -589,7 +591,7 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors flex-shrink-0"
+              className="p-3 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors flex-shrink-0"
             >
               <Paperclip className="w-5 h-5" />
             </button>
@@ -599,7 +601,7 @@ export default function ChatPage() {
               onChange={handleTyping}
               placeholder={isRecording ? "در حال ضبط صدا..." : "پیام خود را بنویسید..."}
               disabled={isRecording}
-              className="flex-1 bg-gray-100 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-full px-6 py-3 text-sm transition-all"
+              className="flex-1 bg-gray-100 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 rounded-full px-6 py-3 text-sm transition-all text-gray-900 dark:text-gray-100"
             />
             {newMessage.trim() || selectedFile ? (
               <button
@@ -613,7 +615,7 @@ export default function ChatPage() {
               <button
                 type="button"
                 onClick={isRecording ? stopRecording : startRecording}
-                className={`p-3 rounded-full transition-colors flex-shrink-0 ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                className={`p-3 rounded-full transition-colors flex-shrink-0 ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
               >
                 {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
@@ -623,27 +625,45 @@ export default function ChatPage() {
       </div>
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
               {user?.must_change_password ? 'تغییر اجباری رمز عبور' : 'تنظیمات حساب کاربری'}
             </h2>
-            
+
+            {!user?.must_change_password && (
+              <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">ظاهر برنامه</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-600 dark:text-indigo-400">
+                      <EyeOff className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">حالت شب</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">تغییر تم برنامه به حالت تیره یا روشن</p>
+                    </div>
+                  </div>
+                  <ThemeToggle className="scale-125" />
+                </div>
+              </div>
+            )}
+
             {user?.must_change_password && (
-              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-sm">
+              <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl text-yellow-800 dark:text-yellow-400 text-sm">
                 مدیر سیستم رمز عبور شما را ریست کرده است. لطفا قبل از ادامه، رمز عبور جدیدی برای خود تنظیم کنید.
               </div>
             )}
 
             {passwordError && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-700">
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3 text-red-700 dark:text-red-400">
                 <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <p className="text-sm">{passwordError}</p>
               </div>
             )}
 
             {passwordSuccess && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3 text-green-700">
+              <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl flex items-start gap-3 text-green-700 dark:text-green-400">
                 <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <p className="text-sm">{passwordSuccess}</p>
               </div>
@@ -651,34 +671,34 @@ export default function ChatPage() {
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">رمز عبور فعلی</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رمز عبور فعلی</label>
                 <input
                   type="password"
                   required
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">رمز عبور جدید</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رمز عبور جدید</label>
                 <input
                   type="password"
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="حداقل ۸ کاراکتر، شامل عدد، و حرف بزرگ یا کاراکتر خاص"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">تکرار رمز عبور جدید</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تکرار رمز عبور جدید</label>
                 <input
                   type="password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
               <div className="flex gap-3 mt-6">
@@ -692,7 +712,7 @@ export default function ChatPage() {
                   <button
                     type="button"
                     onClick={() => setShowSettings(false)}
-                    className="flex-1 py-3 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   >
                     انصراف
                   </button>

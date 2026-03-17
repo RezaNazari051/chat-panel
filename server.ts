@@ -360,17 +360,6 @@ async function startServer() {
     res.json({ success: true, message: 'رمز عبور کاربر ریست شد' });
   });
 
-  // Admin: Get or Create Public Invite Link
-  app.get('/api/admin/public-invite-link', authenticateToken, isAdmin, (req, res) => {
-    let invite = db.prepare('SELECT token FROM invite_links WHERE token = ?').get('public') as any;
-    if (!invite) {
-      db.prepare('INSERT INTO invite_links (token, max_uses, created_by) VALUES (?, ?, ?)').run('public', 0, req.user.id);
-      invite = { token: 'public' };
-    }
-    const url = `${req.protocol}://${req.get('host')}/invite/${invite.token}`;
-    res.json({ url });
-  });
-
   // Admin: Get all conversations
   app.get('/api/admin/conversations', authenticateToken, isAdmin, (req, res) => {
     const conversations = db.prepare(`
@@ -547,6 +536,30 @@ async function startServer() {
   app.get('/api/admin/invites', authenticateToken, isAdmin, (req, res) => {
     const invites = db.prepare('SELECT * FROM invite_links ORDER BY created_at DESC').all();
     res.json(invites);
+  });
+
+  // Admin: Delete Invite Link
+  app.delete('/api/admin/invites/:id', authenticateToken, isAdmin, (req, res) => {
+    const inviteId = req.params.id;
+    try {
+      db.prepare('DELETE FROM invite_links WHERE id = ?').run(inviteId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting invite:', error);
+      res.status(500).json({ error: 'خطا در حذف لینک دعوت' });
+    }
+  });
+
+  // Admin: Deactivate Invite Link
+  app.patch('/api/admin/invites/:id/deactivate', authenticateToken, isAdmin, (req, res) => {
+    const inviteId = req.params.id;
+    try {
+      db.prepare('UPDATE invite_links SET expires_at = ? WHERE id = ?').run(new Date().toISOString(), inviteId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deactivating invite:', error);
+      res.status(500).json({ error: 'خطا در مسدود کردن لینک دعوت' });
+    }
   });
 
   // Get user's conversation ID

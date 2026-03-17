@@ -6,6 +6,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import ChatPage from './pages/ChatPage';
@@ -20,9 +21,11 @@ function PrivateRoute({ children, role }: { children: React.ReactNode, role?: st
 
 function AppContent() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans" dir="rtl">
+      <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'} font-sans`} dir="rtl">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/invite/:token" element={<InvitePage />} />
@@ -48,7 +51,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </AuthProvider>
   );
 }
